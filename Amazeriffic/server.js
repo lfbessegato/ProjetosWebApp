@@ -1,54 +1,49 @@
 var express = require("express"),
     http = require("http"),
-    app = express (),
-    // Cria a lista de tarefas aqui copiando o conteúdo de todos.OLD.json
-    toDos = [
-        { 
-            "description" : "Get groceries",
-            "tags"  : [ "shopping", "chores" ]
-        },
-        { 
-            "description" : "Make up some new ToDos",
-            "tags"  : [ "writing", "work" ]
-        },
-        {
-            "description" : "Prep for Monday's class",
-            "tags"  : [ "work", "teaching" ]
-        },
-        { 
-            "description" : "Answer emails",
-            "tags"  : [ "work" ]
-        },
-        { 
-            "description" : "Take Gracie to the park",
-            "tags"  : [ "chores", "pets" ]
-        },
-        { 
-            "description" : "Finish writing this book",
-            "tags"  : [ "writing", "work" ]
-        }
-    ]
-    
-    app.use(express.static(__dirname + "/client"));
+    // import the mongoose library
+    mongoose = require("mongoose"),
+    app = express();
 
-    http.createServer(app).listen(3000);
+app.use(express.static(__dirname + "/client"));
+app.use(express.bodyParser());
 
-    // Diz ao Express para efetuar o parse dos objetos JSON de Entrada
-    app.use(express.urlencoded());
+// connect to the amazeriffic data store in mongo
+mongoose.connect('mongodb://localhost:27017/amazeriffic');
 
+// This is our mongoose model for todos
+var ToDoSchema = mongoose.Schema({
+    description: String,
+    tags: [ String ]
+});
 
-    // Esta rota tomará o lugar de nosso arquivo todos.json do exemplo do cap 5 
-    app.get("/todos.json", function(req, res){
-        res.json(toDos);
+var ToDo = mongoose.model("ToDo", ToDoSchema);
+
+http.createServer(app).listen(3000);
+
+app.get("/todos.json", function (req, res) {
+    ToDo.find({}, function (err, toDos) {
+	res.json(toDos);
     });
+});
 
-    app.post("/todos", function(req, res){
-        // o Objeto agora está armazenado em req.body
-        var newToDo = req.body;
-
-        console.log(newToDo);
-        toDos.push(newToDo);
-
-        // envia de volta um objeto simples
-        res.json({"Message":"You posted to the server!"});
+app.post("/todos", function (req, res) {
+    console.log(req.body);
+    var newToDo = new ToDo({"description":req.body.description, "tags":req.body.tags});
+    newToDo.save(function (err, result) {
+	if (err !== null) {
+	    // the element did not get saved!
+	    console.log(err);
+	    res.send("ERROR");
+	} else {
+	    // our client expects *all* of the todo items to be returned, so we'll do
+	    // an additional request to maintain compatibility
+	    ToDo.find({}, function (err, result) {
+		if (err !== null) {
+		    // the element did not get saved!
+		    res.send("ERROR");
+		}
+		res.json(result);
+	    });
+	}
     });
+});

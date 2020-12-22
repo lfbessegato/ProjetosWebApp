@@ -1,6 +1,6 @@
 var main = function (toDoObjects) {
     "use strict";
-
+    console.log("SANITY CHECK");
     var toDos = toDoObjects.map(function (toDo) {
           // we'll just return the description
           // of this toDoObject
@@ -56,6 +56,8 @@ var main = function (toDoObjects) {
                     return { "name": tag, "toDos": toDosWithTag };
                 });
 
+                console.log(tagObjects);
+
                 tagObjects.forEach(function (tag) {
                     var $tagName = $("<h3>").text(tag.name),
                         $content = $("<ul>");
@@ -75,29 +77,27 @@ var main = function (toDoObjects) {
                     $inputLabel = $("<p>").text("Description: "),
                     $tagInput = $("<input>").addClass("tags"),
                     $tagLabel = $("<p>").text("Tags: "),
-                    $button = $("<button>").text("+");
+                    $button = $("<span>").text("+");
 
                 $button.on("click", function () {
                     var description = $input.val(),
                         tags = $tagInput.val().split(","),
-                        // create the new to-do item
                         newToDo = {"description":description, "tags":tags};
-                                 
-                    toDoObjects.push({"description":description, "tags":tags});
 
-                    // here we'll do a quick post to our todos route
-                    $.post("todos", newToDo, function (response) {
-                        console.log("We posted and the server responded!");
-                        console.log(response);
-                    });
-                    
-                    // update toDos
-                    toDos = toDoObjects.map(function (toDo) {
-                        return toDo.description;
-                    });
+                    $.post("todos", newToDo, function (result) {
+                        console.log(result);
 
-                    $input.val("");
-                    $tagInput.val("");
+                        //toDoObjects.push(newToDo);
+                        toDoObjects = result;
+
+                        // update toDos
+                        toDos = toDoObjects.map(function (toDo) {
+                            return toDo.description;
+                        });
+
+                        $input.val("");
+                        $tagInput.val("");
+                    });
                 });
 
                 $content = $("<div>").append($inputLabel)
